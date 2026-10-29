@@ -217,3 +217,41 @@ fn pending_repeater_pulses_without_input(backend: TestBackend) {
     runner.tick();
     runner.check_block_powered(trapdoor_pos, false);
 }
+
+/// A lever set to a strength powers the wire beside it at that strength, which then decays
+/// as usual: five wires reach the trapdoor only from strength 5.
+fn analog_lever_decays_along_wire(optimize: bool) {
+    let lever_pos = pos(0, 1, 0);
+    let trapdoor_pos = pos(6, 1, 0);
+
+    let mut world = TestWorld::new(1, 1, 1);
+    make_lever(&mut world, lever_pos);
+    for x in 1..=5 {
+        make_wire(&mut world, pos(x, 1, 0));
+    }
+    world.set_block(trapdoor_pos, trapdoor());
+
+    let mut runner = BackendRunner::new_analog(world, optimize);
+    runner.check_block_powered(trapdoor_pos, false);
+    for (power, powered) in [
+        (15, true),
+        (5, true),
+        (4, false),
+        (1, false),
+        (6, true),
+        (0, false),
+    ] {
+        runner.set_power(lever_pos, power);
+        runner.check_block_powered(trapdoor_pos, powered);
+    }
+}
+
+#[test]
+fn analog_lever_decays_along_wire_rp_direct() {
+    analog_lever_decays_along_wire(false);
+}
+
+#[test]
+fn analog_lever_decays_along_wire_rp_direct_optimized() {
+    analog_lever_decays_along_wire(true);
+}

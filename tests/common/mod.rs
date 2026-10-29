@@ -17,6 +17,10 @@ impl RedpilerInstance {
             optimize,
             ..Default::default()
         };
+        RedpilerInstance::with_options(world, options)
+    }
+
+    fn with_options(world: &TestWorld, options: CompilerOptions) -> RedpilerInstance {
         let mut compiler = Compiler::default();
         let max_x = world.x_size * 16 - 1;
         let max_y = world.y_size * 16 - 1;
@@ -55,6 +59,28 @@ impl BackendRunner {
                 world,
             },
         }
+    }
+
+    /// A runner on redpiler with analog inputs, whose levers `set_power` sets.
+    pub fn new_analog(world: TestWorld, optimize: bool) -> BackendRunner {
+        let options = CompilerOptions {
+            optimize,
+            analog_inputs: true,
+            ..Default::default()
+        };
+        BackendRunner {
+            redpiler: Some(RedpilerInstance::with_options(&world, options)),
+            world,
+        }
+    }
+
+    pub fn set_power(&mut self, pos: BlockPos, power: u8) {
+        let redpiler = self
+            .redpiler
+            .as_mut()
+            .expect("only redpiler sets a lever's power");
+        redpiler.compiler.set_power(pos, power);
+        redpiler.compiler.flush(&mut self.world);
     }
 
     pub fn tick(&mut self) {

@@ -181,6 +181,7 @@ fn main() -> ExitCode {
                 print_before_backend: false,
                 backend_variant: Default::default(),
                 passes,
+                analog_inputs: false,
             };
             compile::compile(&input_path, &output_path, &options);
         }

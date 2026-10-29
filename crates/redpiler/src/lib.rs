@@ -58,6 +58,10 @@ pub struct CompilerOptions {
     pub backend_variant: BackendVariant,
     /// A comma separated list of passes to run. This can only be used by the rilc driver.
     pub passes: Option<String>,
+    /// Allow levers to be set to any signal strength with [`Compiler::set_power`], as if
+    /// driven by a comparator, rather than only on or off. Optimization then treats every
+    /// lever as able to output any strength.
+    pub analog_inputs: bool,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
@@ -85,6 +89,7 @@ impl CompilerOptions {
                 "--wire-cross-out" => self.wire_cross_out = true,
                 "--print-after-all" => self.print_after_all = true,
                 "--print-before-backend" => self.print_before_backend = true,
+                "--analog-inputs" => self.analog_inputs = true,
                 // FIXME: use actual error handling
                 _ => warn!("Unrecognized option: {}", option),
             }
@@ -99,6 +104,7 @@ impl CompilerOptions {
                     "d" => self.wire_dot_out = true,
                     "l" => self.illegal_states_out = true,
                     "c" => self.wire_cross_out = true,
+                    "a" => self.analog_inputs = true,
                     // FIXME: use actual error handling
                     _ => warn!("Unrecognized option: -{}", c),
                 }
@@ -247,6 +253,17 @@ impl Compiler {
         self.backend().set_pressure_plate(pos, powered);
     }
 
+    /// Sets the lever at `pos` to output signal strength `power`, from 0 to 15, as a
+    /// comparator would, powering the block it is attached to at that strength. Needs the
+    /// circuit compiled with [`CompilerOptions::analog_inputs`].
+    pub fn set_power(&mut self, pos: BlockPos, power: u8) {
+        if !self.options.analog_inputs {
+            warn!("Tried to set the power of a lever without analog inputs enabled");
+            return;
+        }
+        self.backend().set_power(pos, power.min(15));
+    }
+
     pub fn flush<W: World>(&mut self, world: &mut W) {
         let io_only = self.options.io_only;
         self.backend().flush(world, io_only);
@@ -291,9 +308,12 @@ mod tests {
             print_before_backend: false,
             backend_variant: BackendVariant::default(),
             passes: None,
+            analog_inputs: false,
         };
         let options = CompilerOptions::parse(input);
 
         assert_eq!(options, expected_options);
+        assert!(CompilerOptions::parse("--analog-inputs").analog_inputs);
+        assert!(CompilerOptions::parse("-a").analog_inputs);
     }
 }

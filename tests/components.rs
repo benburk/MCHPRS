@@ -255,3 +255,36 @@ fn analog_lever_decays_along_wire_rp_direct() {
 fn analog_lever_decays_along_wire_rp_direct_optimized() {
     analog_lever_decays_along_wire(true);
 }
+
+/// A comparator's block entity shows the strength it outputs once flushed: an analog lever
+/// at 9 behind it, through two wires at 9 and 8, gives 8.
+fn comparator_flushes_its_strength(optimize: bool) {
+    let lever_pos = pos(0, 1, 0);
+    let comparator_pos = pos(3, 1, 0);
+
+    let mut world = TestWorld::new(1, 1, 1);
+    make_lever(&mut world, lever_pos);
+    make_wire(&mut world, pos(1, 1, 0));
+    make_wire(&mut world, pos(2, 1, 0));
+    make_comparator(
+        &mut world,
+        comparator_pos,
+        mchprs_blocks::blocks::ComparatorMode::Compare,
+        BlockDirection::West,
+    );
+
+    let mut runner = BackendRunner::new_analog(world, optimize);
+    runner.set_power(lever_pos, 9);
+    runner.tick();
+    runner.tick();
+    runner.check_comparator_strength(comparator_pos, 8);
+    runner.set_power(lever_pos, 0);
+    runner.tick();
+    runner.tick();
+    runner.check_comparator_strength(comparator_pos, 0);
+}
+
+#[test]
+fn comparator_flushes_its_strength_rp_direct() {
+    comparator_flushes_its_strength(false);
+}

@@ -281,6 +281,14 @@ impl JITBackend for DirectBackend {
                     repeater.locked = node.locked;
                 }
                 world.set_block(*pos, *block);
+                if matches!(block, Block::Comparator(_)) {
+                    world.set_block_entity(
+                        *pos,
+                        BlockEntity::Comparator {
+                            output_strength: node.output_power,
+                        },
+                    );
+                }
             }
         }
         for info in &mut self.noteblock_info {

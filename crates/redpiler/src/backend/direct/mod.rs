@@ -238,6 +238,19 @@ impl JITBackend for DirectBackend {
         }
     }
 
+    fn set_power(&mut self, pos: BlockPos, power: u8) {
+        let node_id = self.pos_map[&pos];
+        let node = &self.nodes[node_id];
+        match node.ty {
+            NodeType::Lever => {
+                if node.output_power != power {
+                    self.set_node(node_id, power > 0, power);
+                }
+            }
+            _ => warn!("Tried to set the power of a {:?}", node.ty),
+        }
+    }
+
     fn tick(&mut self) {
         let mut queues = self.scheduler.queues_this_tick();
 

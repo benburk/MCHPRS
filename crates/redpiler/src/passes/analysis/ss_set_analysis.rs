@@ -21,6 +21,7 @@ pub struct SSSet(u16);
 impl SSSet {
     pub const ZERO: SSSet = SSSet(1);
     pub const BINARY: SSSet = SSSet(1 | 1 << 15);
+    pub const FULL: SSSet = SSSet(u16::MAX);
 
     pub fn singleton(ss: u8) -> SSSet {
         SSSet(1 << ss)
@@ -112,7 +113,7 @@ impl<W: World> Pass<W> for SSSetAnalysis {
     fn run_pass(
         &self,
         graph: &mut CompileGraph,
-        _: &CompilerOptions,
+        options: &CompilerOptions,
         _: &CompilerInput<'_, W>,
         analysis_infos: &mut AnalysisInfos,
     ) {
@@ -142,7 +143,13 @@ impl<W: World> Pass<W> for SSSetAnalysis {
                 let (default_input, side_input) = collect_inputs(graph, &sets, node_idx);
                 let node = &graph[node_idx];
                 let old = sets[node_idx.index()].unwrap();
-                let new = old.union(evaluate(&node.ty, &node.state, default_input, side_input));
+                let new = old.union(evaluate(
+                    &node.ty,
+                    &node.state,
+                    default_input,
+                    side_input,
+                    options.analog_inputs,
+                ));
                 if new == old {
                     continue;
                 }
@@ -189,7 +196,13 @@ fn collect_inputs(
     (default_input, side_input)
 }
 
-fn evaluate(ty: &NodeType, state: &NodeState, default_input: SSSet, side_input: SSSet) -> SSSet {
+fn evaluate(
+    ty: &NodeType,
+    state: &NodeState,
+    default_input: SSSet,
+    side_input: SSSet,
+    analog_inputs: bool,
+) -> SSSet {
     match ty {
         NodeType::Repeater { .. } => {
             if side_input.contains(0) {
@@ -216,6 +229,7 @@ fn evaluate(ty: &NodeType, state: &NodeState, default_input: SSSet, side_input: 
         }
         NodeType::Wire => default_input,
         NodeType::Constant => SSSet::singleton(state.output_strength),
+        NodeType::Lever if analog_inputs => SSSet::FULL,
         NodeType::Button | NodeType::Lever | NodeType::PressurePlate => SSSet::BINARY,
     }
 }

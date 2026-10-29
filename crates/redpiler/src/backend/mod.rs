@@ -28,6 +28,8 @@ pub trait JITBackend {
 
     fn on_use_block(&mut self, pos: BlockPos);
     fn set_pressure_plate(&mut self, pos: BlockPos, powered: bool);
+    /// Sets the lever at `pos` to output signal strength `power`.
+    fn set_power(&mut self, pos: BlockPos, power: u8);
     fn flush<W: World>(&mut self, world: &mut W, io_only: bool);
     fn reset<W: World>(&mut self, world: &mut W, io_only: bool);
     fn has_pending_ticks(&self) -> bool;

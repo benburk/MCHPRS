@@ -1,3 +1,4 @@
+use mchprs_blocks::block_entities::BlockEntity;
 use mchprs_blocks::blocks::{Block, Comparator, ComparatorMode, LeverFace, Repeater};
 use mchprs_blocks::{BlockDirection, BlockPos};
 use mchprs_redpiler::{BackendVariant, Compiler, CompilerOptions};
@@ -126,6 +127,15 @@ impl BackendRunner {
             Some(powered),
             "when testing with the base redstone implementation"
         );
+    }
+
+    pub fn check_comparator_strength(&self, pos: BlockPos, strength: u8) {
+        match self.world.get_block_entity(pos) {
+            Some(BlockEntity::Comparator { output_strength }) => {
+                assert_eq!(*output_strength, strength)
+            }
+            other => panic!("no comparator entity at {pos:?}: {other:?}"),
+        }
     }
 
     pub fn check_powered_for(&mut self, pos: BlockPos, powered: bool, ticks: usize) {

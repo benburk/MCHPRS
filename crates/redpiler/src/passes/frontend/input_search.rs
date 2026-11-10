@@ -148,8 +148,10 @@ impl<'a, W: World> InputSearchState<'a, W> {
             );
         } else if let Block::RedstoneWire(wire) = block {
             match side {
-                BlockFace::Top => self.search_wire(start_node, pos, link_ty, distance),
-                BlockFace::Bottom => {}
+                BlockFace::Top if search_wire => {
+                    self.search_wire(start_node, pos, link_ty, distance)
+                }
+                BlockFace::Top | BlockFace::Bottom => {}
                 _ => {
                     let direction = side.unwrap_direction();
                     if search_wire
